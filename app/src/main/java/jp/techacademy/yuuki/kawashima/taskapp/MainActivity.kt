@@ -20,13 +20,12 @@ import android.widget.SearchView
 import android.widget.Toast
 import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 
 
 const val EXTRA_TASK = "jp.techacademy.yuuki.kawashima.taskapp.TASK"
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var inputMethodManager: InputMethodManager
-    private lateinit var mainLayout: LinearLayout
 
     private lateinit var mTaskAdapter: TaskAdapter
     private lateinit var mRealm: Realm
@@ -39,13 +38,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val inputManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        val mainLayout = findViewById<>(R.id.main_layout)
-        save.setOnClickListener{
-        }
-
-        cancel.setOnClickListener{
-        }
+        val searchView = findViewById(R.id.searchView) as SearchView
 
         fab.setOnClickListener { view ->
             val intent = Intent(this@MainActivity, InputActivity::class.java)
@@ -107,6 +100,43 @@ class MainActivity : AppCompatActivity() {
 
             true
         }
+
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+
+                val text = newText
+                if (text != "") {
+                    val results = mRealm.where(Task::class.java).equalTo("category", text).findAll()
+                    mTaskAdapter.taskList = mRealm.copyFromRealm(results)
+
+                    // TaskのListView用のアダプタに渡す
+                    listView1.adapter = mTaskAdapter
+
+                    // 表示を更新するために、アダプターにデータが変更されたことを知らせる
+                    mTaskAdapter.notifyDataSetChanged()
+                    return false
+                } else {
+                    // Realmデータベースから、「全てのデータを取得して新しい日時順に並べた結果」を取得
+                    val taskRealmResults =
+                        mRealm.where(Task::class.java).findAll().sort("date", Sort.DESCENDING)
+
+                    // 上記の結果を、TaskList としてセットする
+                    mTaskAdapter.taskList = mRealm.copyFromRealm(taskRealmResults)
+
+                    // TaskのListView用のアダプタに渡す
+                    listView1.adapter = mTaskAdapter
+
+                    // 表示を更新するために、アダプターにデータが変更されたことを知らせる
+                    mTaskAdapter.notifyDataSetChanged()
+                }
+                return false
+            }
+        })
+
         reloadListView()
     }
 
@@ -130,10 +160,5 @@ class MainActivity : AppCompatActivity() {
         mRealm.close()
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        inputMethodManager.hideSoftInputFromWindow(view.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
-        mainLayout.requestFocus()
-        return true
 
-    }
 }
