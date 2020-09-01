@@ -14,13 +14,20 @@ import android.content.Intent
 import android.support.v7.app.AlertDialog
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.Context
+import android.view.MotionEvent
 import android.widget.SearchView
 import android.widget.Toast
+import android.view.inputmethod.InputMethodManager
+import android.widget.LinearLayout
 
 
 const val EXTRA_TASK = "jp.techacademy.yuuki.kawashima.taskapp.TASK"
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var inputMethodManager: InputMethodManager
+    private lateinit var mainLayout: LinearLayout
+
     private lateinit var mTaskAdapter: TaskAdapter
     private lateinit var mRealm: Realm
     private val mRealmListener = object : RealmChangeListener<Realm> {
@@ -32,43 +39,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val searchView = findViewById(R.id.search) as SearchView
+        val inputManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val mainLayout = findViewById<>(R.id.main_layout)
+        save.setOnClickListener{
+        }
+
+        cancel.setOnClickListener{
+        }
 
         fab.setOnClickListener { view ->
             val intent = Intent(this@MainActivity, InputActivity::class.java)
             startActivity(intent)
         }
-
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                if(query != "") {
-                    val results = mRealm.where(Task::class.java).equalTo("category", query).findAll()
-                    // 上記の結果を、TaskList としてセットする
-                    mTaskAdapter.taskList = mRealm.copyFromRealm(results)
-
-                    // TaskのListView用のアダプタに渡す
-                    listView1.adapter = mTaskAdapter
-
-                    // 表示を更新するために、アダプターにデータが変更されたことを知らせる
-                    mTaskAdapter.notifyDataSetChanged()
-                }else{
-                    val taskRealmResults = mRealm.where(Task::class.java).findAll().sort("date", Sort.DESCENDING)
-                    // 上記の結果を、TaskList としてセットする
-                    mTaskAdapter.taskList = mRealm.copyFromRealm(taskRealmResults)
-
-                    // TaskのListView用のアダプタに渡す
-                    listView1.adapter = mTaskAdapter
-
-                    // 表示を更新するために、アダプターにデータが変更されたことを知らせる
-                    mTaskAdapter.notifyDataSetChanged()
-                }
-                return false
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                return false
-            }
-        })
 
         // Realmの設定
         mRealm = Realm.getDefaultInstance()
@@ -146,5 +128,12 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
 
         mRealm.close()
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        inputMethodManager.hideSoftInputFromWindow(view.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+        mainLayout.requestFocus()
+        return true
+
     }
 }
